@@ -1,104 +1,107 @@
 import React, { useEffect, useState } from "react";
-import { v4 as uuidv4 } from "uuid";
+import { v4 as uniqueId } from "uuid";
 const App = () => {
-  const [todos, setTodos] = useState([]);
   const [todo, setTodo] = useState("");
+  const [todos, setTodos] = useState([]);
   const [showFinished, setShowFinished] = useState(false);
+
   useEffect(() => {
-    const stringTodo = localStorage.getItem("todos");
-    if (stringTodo) {
-      const todoString = JSON.parse(localStorage.getItem("todos"));
-      setTodos(todoString);
+    const stringTodos = localStorage.getItem("todos");
+    if (stringTodos) {
+      const newTodos = JSON.parse(localStorage.getItem("todos"));
+      setTodos(newTodos);
     }
   }, []);
 
-  const todolist = (updated) => {
+  const handleAddTodos = () => {
+    const newTodos = [...todos, { id: uniqueId(), todo, isComplited: false }];
+    setTodos(newTodos);
+    setTodo("");
+    saveTols(newTodos);
+  };
+
+  const saveTols = (updated) => {
     localStorage.setItem("todos", JSON.stringify(updated));
   };
-
-  const handleToggle = () => {
-    setShowFinished(!showFinished);
-  };
-  const handleChange = (e) => {
-    setTodo(e.target.value);
-  };
-
   const handleEdit = (e, id) => {
-    const editTodo = todos.filter((todo) => todo.id == id);
-    setTodo(editTodo[0].todo);
-    const newTodos = todos.filter((todo) => todo.id !== id);
-    setTodos(newTodos);
-    todolist(newTodos);
-  };
-
-  const handleAdd = () => {
-    const newTodos = [...todos, { id: uuidv4(), todo, isComplited: false }];
-    setTodos(newTodos);
-    todolist(newTodos);
-    setTodo("");
-  };
-  const handleDelete = (e, id) => {
-    const newTodos = todos.filter((todo) => {
-      return todo.id !== id;
+    const t = todos.filter((item) => item.id === id);
+    setTodo(t[0].todo);
+    const newTodos = todos.filter((item) => {
+      return item.id !== id;
     });
     setTodos(newTodos);
-    todolist(newTodos);
+    saveTols(newTodos);
   };
 
+  const handleDelete = (e, id) => {
+    let newTodos = todos.filter((item) => {
+      return item.id !== id;
+    });
+    setTodos(newTodos);
+    saveTols(newTodos);
+  };
   const handleCheck = (e) => {
     const id = e.target.name;
-    const index = todos.findIndex((item) => {
+    const indexTodo = todos.findIndex((item) => {
       return item.id === id;
     });
-    let newTodos = [...todos];
-    newTodos[index].isComplited = !newTodos[index].isComplited;
+    const newTodos = [...todos];
+    newTodos[indexTodo].isComplited = !newTodos[indexTodo].isComplited;
     setTodos(newTodos);
-    todolist(newTodos);
+    saveTols(newTodos);
+  };
+
+  const toggleFinished = (params) => {
+    setShowFinished(!showFinished);
   };
   return (
     <div>
-      <h1>Write your todos here </h1>
-      <input
-        type="text"
-        placeholder="write"
-        value={todo}
-        onChange={handleChange}
-      />
-      <button onClick={handleAdd}>Save</button>
-
-      {todos.length === 0 && <h3>No Todos To display</h3>}
+      <h1>Todo App</h1>
+      <div>
+        <input
+          type="text"
+          value={todo}
+          placeholder="write Todo"
+          onChange={(e) => setTodo(e.target.value)}
+        />
+        <button onClick={handleAddTodos}>Save</button>
+      </div>
       <div>
         <input
           type="checkbox"
-          onChange={handleToggle}
-          checked={showFinished}
+          name="show"
           id="show"
+          checked={showFinished}
+          onClick={toggleFinished}
         />
-        <label htmlFor="show">Show Finished</label>
+        <label htmlFor="show">Show Complited</label>
       </div>
+      {todos.length === 0 && <h3>No Todos To Display</h3>}
       {todos.map((item) => {
         return (
           (showFinished || !item.isComplited) && (
             <div key={item.id}>
               <div>
                 <input
+                  onChange={handleCheck}
                   type="checkbox"
                   name={item.id}
-                  id="checkForComplete"
-                  onChange={handleCheck}
                   checked={item.isComplited}
+                  className={item.isComplited ? "line-through" : ""}
+                  id="chechLine"
                 />
                 <label
-                  htmlFor="checkForComplete"
+                  htmlFor="checkLine"
                   style={{
                     textDecoration: item.isComplited ? "line-through" : "",
                   }}
                 >
                   {item.todo}
                 </label>
-                <button onClick={(e) => handleEdit(e, item.id)}>edit</button>
+
+                <button onClick={(e) => handleEdit(e, item.id)}>Edit</button>
                 <button onClick={(e) => handleDelete(e, item.id)}>
-                  remove
+                  Remove
                 </button>
               </div>
             </div>
