@@ -13,6 +13,7 @@ MongoConnect.then(() => {
   console.log("error in monogoDB connection");
 });
 const app = express();
+app.use(cors());
 app.use(bodyParser.json());
 app.get("/", () => {
   console.log("hey i am app");
@@ -44,32 +45,23 @@ app.post("/todos", async (req, res) => {
   }
 });
 
-app.delete("/todos", async (req, res) => {
+app.delete("/todos/:id", async (req, res) => {
   try {
-    const todos = await todoModel.findByIdAndDelete({ _id: req.body.id });
+    await todoModel.findByIdAndDelete(req.params.id);
     res.status(200).json({
       success: true,
       message: "deleted",
-      todos,
     });
   } catch (error) {
     console.log(error.message);
   }
 });
 
-app.put("/todos", async (req, res) => {
+app.put("/todos/:id", async (req, res) => {
   try {
-    const todos = await todoModel.findByIdAndUpdate(
-      { _id: req.body.id },
-      {
-        todo: req.body.todo,
-        isComplited: req.body.isComplited,
-      }
-    );
-    await todos.save();
+    await todoModel.findByIdAndUpdate(req.params.id, req.body);
     res.status(200).json({
       success: true,
-      todos,
     });
   } catch (error) {
     console.log(error.message);

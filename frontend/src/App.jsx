@@ -1,58 +1,56 @@
 import React, { useEffect, useState } from "react";
-import { v4 as uniqueId } from "uuid";
+import axios from "axios";
 const App = () => {
   const [todo, setTodo] = useState("");
   const [todos, setTodos] = useState([]);
+  const [editingId, setEditingId] = useState(null);
+  const [editingText, setEditingText] = useState("");
   const [showFinished, setShowFinished] = useState(false);
 
+  const url = "http://localhost:5000/todos";
+
+  const fetchTodos = async () => {
+    const newTodos = await axios.get(url);
+    setTodos(newTodos.data.todos);
+  };
+
   useEffect(() => {
-    const stringTodos = localStorage.getItem("todos");
-    if (stringTodos) {
-      const newTodos = JSON.parse(localStorage.getItem("todos"));
-      setTodos(newTodos);
-    }
+    fetchTodos();
   }, []);
 
-  const handleAddTodos = () => {
-    const newTodos = [...todos, { id: uniqueId(), todo, isComplited: false }];
-    setTodos(newTodos);
+  const handleAddTodos = async (todo) => {
+    await axios.post(url, { todo });
     setTodo("");
-    saveTols(newTodos);
+    fetchTodos();
   };
 
-  const saveTols = (updated) => {
-    localStorage.setItem("todos", JSON.stringify(updated));
+  const setEditingOption = (id, text) => {
+    setEditingId(id);
+    setEditingText(text);
   };
-  const handleEdit = (e, id) => {
-    const t = todos.filter((item) => item.id === id);
-    setTodo(t[0].todo);
-    const newTodos = todos.filter((item) => {
-      return item.id !== id;
+  const handleEdit = async (e, id) => {
+    await axios.put(`${url}/${id}`, {
+      todo,
     });
-    setTodos(newTodos);
-    saveTols(newTodos);
+    fetchTodos();
   };
 
-  const handleDelete = (e, id) => {
-    let newTodos = todos.filter((item) => {
-      return item.id !== id;
-    });
-    setTodos(newTodos);
-    saveTols(newTodos);
+  const handleDelete = async (e, id) => {
+    await axios.delete(`${url}/${id}`);
+    fetchTodos();
+    setTodo("");
   };
-  const handleCheck = (e) => {
+  const handleCheck = async (e, isComplited) => {
     const id = e.target.name;
-    const indexTodo = todos.findIndex((item) => {
-      return item.id === id;
-    });
-    const newTodos = [...todos];
-    newTodos[indexTodo].isComplited = !newTodos[indexTodo].isComplited;
-    setTodos(newTodos);
-    saveTols(newTodos);
+    await axios.put(`${url}/${id}`, { isComplited: !isComplited });
+    fetchTodos();
   };
-
   const toggleFinished = (params) => {
     setShowFinished(!showFinished);
+  };
+  const handleChanges = async (id) => {
+    await axios.put(`${url}/${id}`, { todo: editingText });
+    setEditingId("");
   };
   return (
     <div>
@@ -64,7 +62,7 @@ const App = () => {
           placeholder="write Todo"
           onChange={(e) => setTodo(e.target.value)}
         />
-        <button onClick={handleAddTodos}>Save</button>
+        <button onClick={() => handleAddTodos(todo)}>Save</button>
       </div>
       <div>
         <input
@@ -72,7 +70,7 @@ const App = () => {
           name="show"
           id="show"
           checked={showFinished}
-          onClick={toggleFinished}
+          onChange={toggleFinished}
         />
         <label htmlFor="show">Show Complited</label>
       </div>
@@ -80,29 +78,48 @@ const App = () => {
       {todos.map((item) => {
         return (
           (showFinished || !item.isComplited) && (
-            <div key={item.id}>
+            <div key={item._id}>
               <div>
                 <input
-                  onChange={handleCheck}
+                  onChange={(e) => handleCheck(e, item.isComplited)}
                   type="checkbox"
-                  name={item.id}
+                  name={item._id}
                   checked={item.isComplited}
                   className={item.isComplited ? "line-through" : ""}
                   id="chechLine"
                 />
-                <label
-                  htmlFor="checkLine"
-                  style={{
-                    textDecoration: item.isComplited ? "line-through" : "",
-                  }}
-                >
-                  {item.todo}
-                </label>
-
-                <button onClick={(e) => handleEdit(e, item.id)}>Edit</button>
-                <button onClick={(e) => handleDelete(e, item.id)}>
-                  Remove
-                </button>
+                {editingId === item._id ? (
+                  <>
+                    <input
+                      type="text"
+                      value={editingText}
+                      onChange={(e) => setEditingText(e.target.value)}
+                    />
+                    <button onClick={() => handleChanges(item._id)}>
+                      Save Change
+                    </button>
+                    <button onClick={() => setEditingId(null)}>Cancel</button>
+                  </>
+                ) : (
+                  <>
+                    <label
+                      htmlFor="checkLine"
+                      style={{
+                        textDecoration: item.isComplited ? "line-through" : "",
+                      }}
+                    >
+                      {item.todo}
+                    </label>
+                    <button
+                      onClick={() => setEditingOption(item._id, item.todo)}
+                    >
+                      Edit
+                    </button>
+                    <button onClick={(e) => handleDelete(e, item._id)}>
+                      Remove
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           )
